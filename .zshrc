@@ -3,6 +3,8 @@
 # PROMPT
 green=$(tput setaf 71);
 yellow=$(tput setaf 3);
+blue=$(tput setaf 4);
+red=$(tput setaf 1);
 bold=$(tput bold);
 RESET=$(tput sgr0);
 
@@ -22,7 +24,11 @@ setEmoji () {
   EMOJI="$*"
   DISPLAY_DIR='$(dirs)'
   DISPLAY_BRANCH='$(git_branch)'
-  PROMPT="${green}${DISPLAY_DIR}${yellow}${bold}${DISPLAY_BRANCH}${RESET} ${EMOJI}"$'\n'"$ ";
+  if [ $SPIN ]; then
+    PROMPT="${green}${DISPLAY_DIR}${red}${bold}${DISPLAY_BRANCH}${RESET} 🌀"$"$ ";
+  else
+    PROMPT="${green}${DISPLAY_DIR}${yellow}${bold}${DISPLAY_BRANCH}${RESET} ${EMOJI}"$'\n'"$ ";
+  fi
 }
 
 newRandomEmoji () {
@@ -34,23 +40,12 @@ newRandomEmoji
 # allow substitution in PS1
 setopt promptsubst
 
-
-
-
 # -------
 # Aliases
 # -------
 
 # Git
-alias gc="git checkout"
-alias gpf="git push --force-with-lease"
-alias gs="git status"
-alias ga="git add ."
 alias gforce="git push --force-with-lease";
-alias grc="git rebase --continue"
-alias gra="git rebase --abort"
-alias grm="git rebase master"
-alias grs="git rebase --skip"
 alias lastcommit="git reset --soft HEAD~"
 
 commit () { git commit -m "$@"; }
@@ -71,11 +66,13 @@ killport () { lsof -i tcp:"$*" | awk 'NR!=1 {print $2}' | xargs kill -9 ;} # kil
 
 
 # Spin
+function attachcore() { journalctl --unit "proc-shopify--shopify@server.service" --follow }
+function attachweb() { journalctl --unit "proc-shopify--web@server.service" --follow }
+
 alias spl="spin shell";
 alias newshop='bin/rails dev:shop:create'
 alias newshopus='bin/rails dev:shop:create COUNTRY=US'
 alias newshopfr='bin/rails dev:shop:create COUNTRY=FR'
-function attach() { journalctl --unit "proc-shopify--'$1'" --follow }
 function freeze_shop() { bin/rails dev:shop:change_plan SHOP_ID="$1" PLAN=frozen; }
 function change_plan() { bin/rails dev:shop:change_plan SHOP_ID="$1" PLAN="$2"; }
 function shopify_payments() { bundle exec rake dev:shopify_payments:setup SHOP_ID="$1"; }
