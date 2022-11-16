@@ -1,3 +1,5 @@
+# Fig pre block. Keep at the top of this file.
+[[ -f "$HOME/.fig/shell/zshrc.pre.zsh" ]] && builtin source "$HOME/.fig/shell/zshrc.pre.zsh"
 # Path to your oh-my-zsh configuration.
 ZSH=$HOME/.oh-my-zsh
 
@@ -110,6 +112,8 @@ function domaininvoice() { bin/rails billing:invoice:domain SHOP_ID="$1"; }
 function themeinvoice() { bin/rails billing:invoice:theme SHOP_ID="$1"; }
 
 function addcc() { bin/rails billing:payment_methods:credit_card SHOP_ID="$1"; }
+function addpaypal() { bin/rails billing:payment_methods:paypal SHOP_ID="$1"; }
+function addupi() { bin/rails billing:payment_methods:upi SHOP_ID="$1"; }
 function addbank() { bin/rails billing:payment_methods:bank_account SHOP_ID="$1"; }
 
 #port dev c  -> ActiveRecord::Base.connection_config[:port]
@@ -125,3 +129,6 @@ function newapp() { bin/rake dev:create_app_permission SHOP_ID="$1" APP_HANDLE="
 
 [[ -f /opt/dev/sh/chruby/chruby.sh ]] && type chruby >/dev/null 2>&1 || chruby () { source /opt/dev/sh/chruby/chruby.sh; chruby "$@"; }
 export GPG_TTY=$(tty)
+
+# Fig post block. Keep at the bottom of this file.
+[[ -f "$HOME/.fig/shell/zshrc.post.zsh" ]] && builtin source "$HOME/.fig/shell/zshrc.post.zsh"
