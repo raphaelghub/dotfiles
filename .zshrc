@@ -34,7 +34,7 @@ set -k
 # -------
 # Aliases
 # -------
-
+alias whatis="alias | grep"
 
 # General
 npm-latest () { npm info "$1" | grep latest; } # check latest
@@ -42,11 +42,9 @@ killport () { lsof -i tcp:"$*" | awk 'NR!=1 {print $2}' | xargs kill -9 ;} # kil
 alias history='fc -l 1'
 
 # Git
-alias gforce="git push --force-with-lease";
 alias glog="git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --branches"
 
 
-commit () { git commit -m "$@"; }
 checkout () { git checkout "$@"; }
 newbranch () { git checkout -b "$@"; }
 renamebranch () { git branch -m "$@"; }
