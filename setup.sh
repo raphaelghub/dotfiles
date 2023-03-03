@@ -24,3 +24,10 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.
 
 # history
 cart insert history
+
+
+#install copilot cli
+npm install -g @githubnext/github-copilot-cli
+github-copilot-cli auth
+
+eval "$(github-copilot-cli alias -- "$0")"
