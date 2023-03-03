@@ -30,4 +30,4 @@ cart insert history
 npm install -g @githubnext/github-copilot-cli
 npx github-copilot-cli auth
 
-eval "$(github-copilot-cli alias -- "$0")"
+eval "$(npx github-copilot-cli alias -- "$0")"
