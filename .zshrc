@@ -87,6 +87,7 @@ function sunc() {
   spin up $1 --no-snapshots --wait -c $1.branch=${2:-main}
 }
 alias usshop='bin/rails dev:shop:create COUNTRY=US'
+alias bshops='bin/rails business_platform:create SHOP_COUNTRIES=CA,CA'
 alias inrshop='bin/rails dev:shop:create COUNTRY=IN'
 alias eushop='bin/rails dev:shop:create PLAN=basic GATEWAY=bogus API_CLIENT_HANDLES=facebook,online_store COUNTRY=DE'
 function freeze_shop() { bin/rails dev:shop:change_plan SHOP_ID="$1" PLAN=frozen; }
@@ -125,3 +126,6 @@ function newapp() { bin/rake dev:create_app_permission SHOP_ID="$1" APP_HANDLE="
 
 [[ -f /opt/dev/sh/chruby/chruby.sh ]] && type chruby >/dev/null 2>&1 || chruby () { source /opt/dev/sh/chruby/chruby.sh; chruby "$@"; }
 export GPG_TTY=$(tty)
+
+
+# pkill -9 -f spring; pkill -9 -f 'rails.runner'; systemctl restart redis@shopify--shopify.service memcached@shopify--shopify.service mysql@shopify--shopify.service && restart shopify
