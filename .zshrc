@@ -102,16 +102,16 @@ function shop_user() { bin/rails dev:users:create SHOP_ID="$1"; }
 alias commit-history='cart save history'
 
 # Billing
-function invoices() { bin/rails billing:invoice:all SHOP_ID="$1"; }
-function failed_invoice() { bin/rails billing:invoice:create_failed_invoice SHOP_ID="$1"; }
-function onetime_invoice() { bin/rails billing:invoice:one_time SHOP_ID="$1"; }
-function domaininvoice() { bin/rails billing:invoice:domain SHOP_ID="$1"; }
-function themeinvoice() { bin/rails billing:invoice:theme SHOP_ID="$1"; }
+function invoices() { bin/rails seed:invoice:all SHOP_ID="$1"; }
+function failed_invoice() { bin/rails seed:invoice:create_failed_invoice SHOP_ID="$1"; }
+function onetime_invoice() { bin/rails seed:invoice:one_time SHOP_ID="$1"; }
+function domaininvoice() { bin/rails seed:invoice:domain SHOP_ID="$1"; }
+function themeinvoice() { bin/rails seed:invoice:theme SHOP_ID="$1"; }
 
-function addcc() { bin/rails billing:payment_methods:credit_card SHOP_ID="$1"; }
-function addpaypal() { bin/rails billing:payment_methods:paypal SHOP_ID="$1"; }
-function addupi() { bin/rails billing:payment_methods:upi SHOP_ID="$1"; }
-function addbank() { bin/rails billing:payment_methods:bank_account SHOP_ID="$1"; }
+function addcc() { bin/rails seed:payment_methods:credit_card SHOP_ID="$1"; }
+function addpaypal() { bin/rails seed:payment_methods:paypal SHOP_ID="$1"; }
+function addupi() { bin/rails seed:payment_methods:upi SHOP_ID="$1"; }
+function addbank() { bin/rails seed:payment_methods:bank_account SHOP_ID="$1"; }
 
 #port dev c  -> ActiveRecord::Base.connection_config[:port]
 
