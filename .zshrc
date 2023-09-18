@@ -35,6 +35,8 @@ set -k
 # Aliases
 # -------
 alias whatis="alias | grep"
+alias copilot="gh copilot explain"
+alias copilot-help="gh copilot suggest"
 
 # General
 npm-latest () { npm info "$1" | grep latest; } # check latest
@@ -69,11 +71,6 @@ alias whatinstance="spin show -o fqdn --latest"
 alias whatport="echo $MYSQL_PORT"
 alias attachcore="journalctl --unit 'proc-shopify--shopify@server.service' --follow"
 alias watchspin="watch systemctl status"
-alias jc="journalctl"
-alias attachbilling="journalctl --unit 'proc-shopify--billing@server.service' --follow"
-alias attachweb="journalctl --unit 'proc-shopify--web@server.service' --follow"
-alias stopcore="iso procs stop shopify--shopify"
-alias stopweb="iso procs stop shopify--web"
 function attach() { journalctl --unit "proc-shopify--'$1'" --follow }
 alias whatfailed="systemctl list-units --failed"
 alias refresh="yarn refresh-graphql"
@@ -124,8 +121,34 @@ function newapp() { bin/rake dev:create_app_permission SHOP_ID="$1" APP_HANDLE="
 # ApiClient.where(handle: "my-app")[0].beta.enable('app_spending_limits')
 
 
-[[ -f /opt/dev/sh/chruby/chruby.sh ]] && type chruby >/dev/null 2>&1 || chruby () { source /opt/dev/sh/chruby/chruby.sh; chruby "$@"; }
+[[ -f /opt/dev/sh/chruby/chruby.sh ]] && { type chruby >/dev/null 2>&1 || chruby () { source /opt/dev/sh/chruby/chruby.sh; chruby "$@"; } }
 export GPG_TTY=$(tty)
 
 
 # pkill -9 -f spring; pkill -9 -f 'rails.runner'; systemctl restart redis@shopify--shopify.service memcached@shopify--shopify.service mysql@shopify--shopify.service && restart shopify
+
+PATH=~/.console-ninja/.bin:$PATH
+
+if [ $SPIN ]; then
+
+    # Confirm before installing Gum
+    # read -p "Do you want to install Gum? (y/n)" choice
+    # if [ "$choice" = "y" ]; then
+
+
+
+    # if ! dpkg -l charm &> /dev/null; then
+    #   sudo mkdir -p /etc/apt/keyrings
+    #   curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+    #   echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+    #   sudo apt update && sudo apt install gum
+    # fi
+
+
+    # else
+    #     echo "Gum installation skipped."
+    # fi
+
+     # Install Copilot CLI after authentication
+     gh extension install github/gh-copilot
+fi
