@@ -26,6 +26,3 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.
 cart insert history
 
 
-#install copilot cli
-npm install -g @githubnext/github-copilot-cli
-# npx github-copilot-cli auth
