@@ -1,0 +1,84 @@
+format = """
+$username\
+$directory(full_path=true)\
+$git_branch\
+$git_state\
+$git_status\
+$nodejs\
+ $fill\
+$shell\
+$cmd_duration $jobs $time\
+$hostname\
+$line_break\
+$character"""
+
+
+# Disable the blank line at the start of the prompt
+add_newline = false
+
+[fill]
+symbol = " "
+
+[directory]
+style = "cyan"
+truncation_length = 6
+truncate_to_repo = false
+repo_root_style = "bold cyan"
+home_symbol = " ~"
+truncation_symbol = '…/'
+
+
+[git_branch]
+symbol = '🌱 '
+format = 'on [$symbol$branch(:$remote_branch)]($style) '
+style = "bright-black"
+
+
+[git_status]
+format = '([\[$all_status$ahead_behind\]]($style) )'
+style = "cyan"
+conflicted = "🏳"
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+untracked = "?${count}"
+stashed = "$${count}"
+modified = "!${count}"
+renamed = "»${count}"
+staged = ' [++\($count\)](green)'
+deleted = "✘${count}"
+
+[git_state]
+format = '[\($state( $progress_current of $progress_total)\)]($style) '
+cherry_pick = '[🍒 PICKING](bold red)'
+rebase = '[🍇 REBASING](bold red)'
+
+
+[git_metrics]
+disabled = false
+added_style = 'bold blue'
+format = '[+$added]($added_style)/[-$deleted]($deleted_style) '
+
+[nodejs]
+format = ' [🤖$version](green) '
+
+[time]
+disabled = false
+style = "bright-black"
+format = "[$time]($style)"
+
+
+[custom.stunnel]
+when = "ps aux | grep stunnel | grep -v grep"
+command = "ps -o etime= -p $(ps aux | grep stunnel | grep -v grep | awk '{print $2}')"
+style = "red"
+format = "[TUNNEL OPEN for $output]($style)"
+
+[battery]
+full_symbol = '🔋 '
+charging_symbol = '⚡️ '
+discharging_symbol = '💀 '
+
+[character]
+success_symbol = '[>](cyan) '
+error_symbol = '[✗](bold red) '
