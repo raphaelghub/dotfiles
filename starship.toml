@@ -1,57 +1,62 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Disable the blank line at the start of the prompt
+add_newline = true
+command_timeout = 4000
+
 format = """
-$username\
 $directory(full_path=true)\
+$fill\
+$username\
 $git_branch\
-$git_state\
-$git_status\
+$git_state$git_status\
 $nodejs\
- $fill\
 $shell\
 $cmd_duration $jobs $time\
 $hostname\
 $line_break\
-$character"""
-
-
-# Disable the blank line at the start of the prompt
-add_newline = false
+$character\
+"""
 
 [fill]
 symbol = " "
 
 [directory]
 style = "cyan"
-truncation_length = 6
+truncation_length = 4
 truncate_to_repo = false
 repo_root_style = "bold cyan"
-home_symbol = " ~"
-truncation_symbol = '…/'
+home_symbol = "~"
+truncation_symbol = './.'
+
+[directory.substitutions]
+'~/world/trees/root' = '.world-root.'
 
 
 [git_branch]
-symbol = '🌱 '
+# symbol = '🌱 '
 format = 'on [$symbol$branch(:$remote_branch)]($style) '
-style = "bright-black"
+style = "bold bright-black"
 
 
 [git_status]
 format = '([\[$all_status$ahead_behind\]]($style) )'
-style = "cyan"
-conflicted = "🏳"
+style = "bold cyan"
+conflicted = "💥"
 ahead = "⇡${count}"
-behind = "⇣${count}"
-diverged = "⇕⇡${ahead_count}⇣${behind_count}"
-untracked = "?${count}"
-stashed = "$${count}"
-modified = "!${count}"
-renamed = "»${count}"
-staged = ' [++\($count\)](green)'
-deleted = "✘${count}"
+behind = "⇣${count} "
+diverged = " ⇕⇡${ahead_count} ⇣${behind_count} "
+untracked = "?${count} "
+stashed = "\\$${count} "
+modified = "!${count} "
+renamed = "»${count} "
+staged = ' [++\($count\)](bold green) '
+deleted = "✘ ${count} "
 
 [git_state]
 format = '[\($state( $progress_current of $progress_total)\)]($style) '
-cherry_pick = '[🍒 PICKING](bold red)'
-rebase = '[🍇 REBASING](bold red)'
+cherry_pick = '[🍒 PICKING](red)'
+rebase = '[🍇 REBASING](red)'
 
 
 [git_metrics]
@@ -61,11 +66,16 @@ format = '[+$added]($added_style)/[-$deleted]($deleted_style) '
 
 [nodejs]
 format = ' [🤖$version](green) '
+disabled = true
 
 [time]
 disabled = false
 style = "bright-black"
 format = "[$time]($style)"
+
+[cmd_duration]
+format = "[$duration]($style)"
+style = "yellow"
 
 
 [custom.stunnel]
@@ -80,5 +90,19 @@ charging_symbol = '⚡️ '
 discharging_symbol = '💀 '
 
 [character]
-success_symbol = '[>](cyan) '
-error_symbol = '[✗](bold red) '
+success_symbol = '[>](bold green) '
+error_symbol = '[>](bold red) '
+
+[jobs]
+symbol = "✦"
+style = "bold red"
+number_threshold = 1
+format = "[$symbol]($style)"
+
+[username]
+style_user = 'bright-black'
+style_root = 'black'
+format = '[$user]($style) '
+disabled = false
+show_always = true
+aliases = { "raphaellomotey" = "work" }
