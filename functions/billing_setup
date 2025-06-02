@@ -1,0 +1,86 @@
+# Interactive shop ID input
+local shop_id
+if [ $# -eq 1 ]; then
+  shop_id="$1"
+else
+  shop_id=$(smart_gum input --placeholder "Enter Shop ID (e.g., 12345)" --header "🏪 Shop ID:")
+fi
+
+if [ -z "$shop_id" ]; then
+  smart_gum style --foreground 196 "❌ Shop ID is required"
+  return 1
+fi
+
+# Validate shop ID is numeric
+if ! [[ "$shop_id" =~ ^[0-9]+$ ]]; then
+  smart_gum style --foreground 196 "❌ Shop ID must be numeric"
+  return 1
+fi
+
+# Interactive operation selection
+local operation=$(smart_gum choose \
+  "Generate all invoices" \
+  "Create failed invoice" \
+  "Create one-time invoice" \
+  "Create domain invoice" \
+  "Create theme invoice" \
+  "Add credit card payment method" \
+  "Add PayPal payment method" \
+  "Add UPI payment method" \
+  "Add bank account payment method" \
+  --header "💰 Select billing operation:")
+
+if [ -z "$operation" ]; then
+  smart_gum style --foreground 196 "❌ No operation selected"
+  return 1
+fi
+
+# Map selection to command
+local cmd=""
+case "$operation" in
+  "Generate all invoices")
+    cmd="bin/rails seed:invoice:all SHOP_ID=\"$shop_id\""
+    ;;
+  "Create failed invoice")
+    cmd="bin/rails seed:invoice:create_failed_invoice SHOP_ID=\"$shop_id\""
+    ;;
+  "Create one-time invoice")
+    cmd="bin/rails seed:invoice:one_time SHOP_ID=\"$shop_id\""
+    ;;
+  "Create domain invoice")
+    cmd="bin/rails seed:invoice:domain SHOP_ID=\"$shop_id\""
+    ;;
+  "Create theme invoice")
+    cmd="bin/rails seed:invoice:theme SHOP_ID=\"$shop_id\""
+    ;;
+  "Add credit card payment method")
+    cmd="bin/rails seed:payment_methods:credit_card SHOP_ID=\"$shop_id\""
+    ;;
+  "Add PayPal payment method")
+    cmd="bin/rails seed:payment_methods:paypal SHOP_ID=\"$shop_id\""
+    ;;
+  "Add UPI payment method")
+    cmd="bin/rails seed:payment_methods:upi SHOP_ID=\"$shop_id\""
+    ;;
+  "Add bank account payment method")
+    cmd="bin/rails seed:payment_methods:bank_account SHOP_ID=\"$shop_id\""
+    ;;
+esac
+
+# Show what will be executed
+smart_gum style \
+  --border normal \
+  --margin "1" \
+  --padding "1" \
+  --border-foreground 212 \
+  "💰 Billing operation for shop $shop_id:" \
+  "${operation#* }" \
+  "" \
+  "Command: $cmd"
+
+# Confirm execution
+if smart_gum confirm "Execute billing operation?"; then
+  eval "$cmd"
+else
+  smart_gum style --foreground 196 "❌ Operation cancelled"
+fi

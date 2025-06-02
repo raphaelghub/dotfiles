@@ -1,0 +1,11 @@
+smart_gum style \
+  --border normal \
+  --margin "1" \
+  --padding "1" \
+  --border-foreground 212 \
+  "🌳 Current Worktree Status:"
+
+echo "📂 Current directory: $(pwd)"
+echo "🌿 Git branch: $(git branch --show-current 2>/dev/null || echo 'Not in git repo')"
+echo "🏗️ Available trees:"
+dev tree list 2>/dev/null || echo "  No trees available"
