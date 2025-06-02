@@ -1,0 +1,269 @@
+#!/usr/bin/env zsh
+# Enhanced killport function with interactive selection and advanced features
+
+killport () {
+  # Show help if requested
+  if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "Usage: killport [PORT|PATTERN] [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  -h, --help     Show this help"
+    echo "  -9, --force    Force kill (SIGKILL) - default"
+    echo "  -15, --term    Graceful kill (SIGTERM)"
+    echo "  -l, --list     Just list processes, don't kill"
+    echo "  -a, --all      Show all protocols (TCP, UDP)"
+    echo ""
+    echo "Examples:"
+    echo "  killport           # Interactive mode"
+    echo "  killport 3000      # Kill process on port 3000"
+    echo "  killport node      # Kill all processes matching 'node'"
+    echo "  killport -l        # List all listening processes"
+    echo "  killport 3000 -15  # Gracefully kill process on port 3000"
+    return 0
+  fi
+
+  local signal="9"
+  local list_only=false
+  local show_all=false
+  local port_or_pattern=""
+
+  # Parse arguments
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -9|--force)
+        signal="9"
+        shift
+        ;;
+      -15|--term)
+        signal="15"
+        shift
+        ;;
+      -l|--list)
+        list_only=true
+        shift
+        ;;
+      -a|--all)
+        show_all=true
+        shift
+        ;;
+      *)
+        if [[ -z "$port_or_pattern" ]]; then
+          port_or_pattern="$1"
+        fi
+        shift
+        ;;
+    esac
+  done
+
+  # If port/pattern provided, use targeted behavior
+  if [[ -n "$port_or_pattern" ]]; then
+    local pids
+    if [[ "$port_or_pattern" =~ ^[0-9]+$ ]]; then
+      # It's a port number
+      if [[ "$show_all" == "true" ]]; then
+        pids=$(lsof -i :"$port_or_pattern" | awk 'NR!=1 {print $2}' | sort -u)
+      else
+        pids=$(lsof -i tcp:"$port_or_pattern" | awk 'NR!=1 {print $2}' | sort -u)
+      fi
+      echo "🔍 Searching for processes on port $port_or_pattern..."
+    else
+      # It's a pattern (process name)
+      if [[ "$show_all" == "true" ]]; then
+        pids=$(lsof -i -P -n | grep -i "$port_or_pattern" | awk '{print $2}' | sort -u)
+      else
+        pids=$(lsof -i tcp -P -n | grep -i "$port_or_pattern" | awk '{print $2}' | sort -u)
+      fi
+      echo "🔍 Searching for processes matching pattern '$port_or_pattern'..."
+    fi
+
+    if [[ -z "$pids" ]]; then
+      smart_gum style --foreground 196 "❌ No processes found"
+      return 1
+    fi
+
+    # Show what we found
+    echo "📋 Found processes:"
+    for pid in $pids; do
+      local cmd=$(ps -p "$pid" -o comm= 2>/dev/null || echo "unknown")
+      local port_info=$(lsof -i -P -n | grep "^[^ ]* *$pid " | awk '{print $9}' | head -1)
+      echo "   PID: $pid | Command: $cmd | Port: $port_info"
+    done
+
+    if [[ "$list_only" == "true" ]]; then
+      return 0
+    fi
+
+    # Kill the processes
+    local signal_name="SIGKILL"
+    [[ "$signal" == "15" ]] && signal_name="SIGTERM"
+
+    if smart_gum confirm "Kill processes with $signal_name?"; then
+      for pid in $pids; do
+        if kill -"$signal" "$pid" 2>/dev/null; then
+          smart_gum style --foreground 34 "✅ Killed process $pid with $signal_name"
+        else
+          smart_gum style --foreground 196 "❌ Failed to kill process $pid"
+        fi
+      done
+    else
+      smart_gum style --foreground 196 "❌ Operation cancelled"
+    fi
+    return
+  fi
+
+  # Interactive mode - get all processes using ports with detailed info
+  local lsof_cmd="lsof -i -P -n | grep LISTEN"
+  if [[ "$show_all" == "true" ]]; then
+    lsof_cmd="lsof -i -P -n"
+  fi
+
+  local processes=$(eval "$lsof_cmd" | awk '{
+    printf "%-8s %-20s %-8s %-15s %-10s %s\n", $2, $1, $3, $9, $8, $10
+  }' | sort -k4,4n)
+
+  if [ -z "$processes" ]; then
+    smart_gum style --foreground 196 "❌ No processes found listening on ports"
+    return 1
+  fi
+
+  if [[ "$list_only" == "true" ]]; then
+    echo "📋 Processes listening on ports:"
+    echo "$processes" | while IFS= read -r line; do
+      if [ -n "$line" ]; then
+        local pid=$(echo "$line" | awk '{print $1}')
+        local command=$(echo "$line" | awk '{print $2}')
+        local user=$(echo "$line" | awk '{print $3}')
+        local port=$(echo "$line" | awk '{print $4}' | cut -d: -f2)
+        local protocol=$(echo "$line" | awk '{print $5}')
+        local address=$(echo "$line" | awk '{print $4}' | cut -d: -f1)
+
+        [[ "$address" == "*" ]] && address="0.0.0.0"
+        echo "   PID: $pid | $command | User: $user | $protocol | $address:$port"
+      fi
+    done
+    return 0
+  fi
+
+  # Format processes for display with enhanced info
+  local formatted_processes=""
+  while IFS= read -r line; do
+    if [ -n "$line" ]; then
+      local pid=$(echo "$line" | awk '{print $1}')
+      local command=$(echo "$line" | awk '{print $2}')
+      local user=$(echo "$line" | awk '{print $3}')
+      local port=$(echo "$line" | awk '{print $4}' | cut -d: -f2)
+      local protocol=$(echo "$line" | awk '{print $5}')
+      local address=$(echo "$line" | awk '{print $4}' | cut -d: -f1)
+
+      # Clean up the display
+      if [ "$address" = "*" ]; then
+        address="0.0.0.0"
+      fi
+
+      # Get memory usage
+      local mem_usage=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.1fMB", $1/1024}')
+      [[ -z "$mem_usage" ]] && mem_usage="N/A"
+
+      local display_line="PID: $pid | $command | User: $user | $protocol | Port: $port | Address: $address | Memory: $mem_usage"
+      if [ -n "$formatted_processes" ]; then
+        formatted_processes="$formatted_processes\n$display_line"
+      else
+        formatted_processes="$display_line"
+      fi
+    fi
+  done <<< "$processes"
+
+  # Show header with enhanced information
+  local header_text="🔍 Processes listening on ports"
+  if [[ "$show_all" == "true" ]]; then
+    header_text="🔍 All network processes (TCP & UDP)"
+  fi
+
+  smart_gum style \
+    --border normal \
+    --margin "1" \
+    --padding "1" \
+    --border-foreground 212 \
+    "$header_text" \
+    "Select process to kill (use space for multiple selection)" \
+    "Signal: $([ "$signal" = "9" ] && echo "SIGKILL (force)" || echo "SIGTERM (graceful)")"
+
+  # Let user select process(es) to kill
+  local selected_processes=$(echo -e "$formatted_processes" | smart_gum choose --no-limit --header "⚠️  Select processes to kill:")
+
+  if [ -z "$selected_processes" ]; then
+    smart_gum style --foreground 196 "❌ No processes selected"
+    return 0
+  fi
+
+  # Extract PIDs and show confirmation with enhanced info
+  local pids=""
+  local process_info=""
+  local total_memory="0"
+  while IFS= read -r selected; do
+    if [ -n "$selected" ]; then
+      local pid=$(echo "$selected" | grep -o 'PID: [0-9]*' | cut -d: -f2 | tr -d ' ')
+      local command=$(echo "$selected" | grep -o '| [^|]*' | head -1 | cut -d'|' -f2 | tr -d ' ')
+      local port=$(echo "$selected" | grep -o 'Port: [0-9]*' | cut -d: -f2 | tr -d ' ')
+      local memory=$(echo "$selected" | grep -o 'Memory: [^|]*' | cut -d: -f2 | tr -d ' ')
+
+      if [ -n "$pids" ]; then
+        pids="$pids $pid"
+        process_info="$process_info\n"
+      else
+        pids="$pid"
+      fi
+      process_info="${process_info}PID $pid ($command) on port $port - Memory: $memory"
+
+      # Calculate total memory (rough estimate)
+      if [[ "$memory" =~ ([0-9.]+)MB ]]; then
+        total_memory=$(echo "$total_memory + ${BASH_REMATCH[1]}" | bc 2>/dev/null || echo "$total_memory")
+      fi
+    fi
+  done <<< "$selected_processes"
+
+  local signal_name="SIGKILL (force kill)"
+  [[ "$signal" == "15" ]] && signal_name="SIGTERM (graceful termination)"
+
+  # Show what will be killed with enhanced info
+  smart_gum style \
+    --border normal \
+    --margin "1" \
+    --padding "1" \
+    --border-foreground 196 \
+    "⚠️  About to kill with $signal_name:" \
+    "$process_info" \
+    "" \
+    "PIDs: $pids" \
+    "Total Memory: ${total_memory}MB (estimated)"
+
+  # Confirm before killing
+  if smart_gum confirm "Kill selected processes with $signal_name?"; then
+    local success_count=0
+    local fail_count=0
+    for pid in $pids; do
+      if kill -"$signal" "$pid" 2>/dev/null; then
+        smart_gum style --foreground 34 "✅ Killed process $pid"
+        ((success_count++))
+      else
+        smart_gum style --foreground 196 "❌ Failed to kill process $pid"
+        ((fail_count++))
+      fi
+    done
+
+    # Summary
+    smart_gum style \
+      --border normal \
+      --margin "1" \
+      --padding "1" \
+      --border-foreground 34 \
+      "📊 Summary:" \
+      "✅ Successfully killed: $success_count processes" \
+      "❌ Failed to kill: $fail_count processes"
+  else
+    smart_gum style --foreground 196 "❌ Operation cancelled"
+  fi
+}
+
+# Make the function available for autoload
+killport "$@"

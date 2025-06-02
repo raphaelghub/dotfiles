@@ -1,0 +1,42 @@
+# Interactive country selection
+local country=$(smart_gum choose "US" "IN" "DE" "CA" "GB" "FR" "AU" "JP" --header "🌍 Select Country:")
+
+if [ -z "$country" ]; then
+  smart_gum style --foreground 196 "❌ No country selected"
+  return 1
+fi
+
+# Interactive plan selection
+local plan=$(smart_gum choose "basic" "professional" "unlimited" "plus" "starter" --header "💼 Select Plan (optional):")
+
+# Interactive API client handles selection (multi-select)
+local handles=$(smart_gum choose "facebook" "online_store" "pos" "mobile_app" "custom" --multiple --header "🔗 Select API Client Handles (use space to select multiple):")
+
+if [ -z "$handles" ]; then
+  handles="facebook,online_store"  # Default handles
+else
+  handles=$(echo "$handles" | tr '\n' ',' | sed 's/,$//')  # Convert to comma-separated
+fi
+
+# Build the command
+local cmd="bin/rails dev:shop:create COUNTRY=$country API_CLIENT_HANDLES=$handles"
+
+if [ -n "$plan" ]; then
+  cmd="$cmd PLAN=$plan"
+fi
+
+# Show what will be executed
+smart_gum style \
+  --border normal \
+  --margin "1" \
+  --padding "1" \
+  --border-foreground 212 \
+  "🏪 Creating shop with:" \
+  "Country: $country" \
+  "Plan: ${plan:-default}" \
+  "API Handles: $handles" \
+  "" \
+  "Command: $cmd"
+
+# Confirm execution
+smart_gum confirm "Execute this command?" && eval "$cmd"
