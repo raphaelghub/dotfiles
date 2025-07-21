@@ -1,16 +1,16 @@
 # Interactive country selection
-local country=$(smart_gum choose "US" "IN" "DE" "CA" "GB" "FR" "AU" "JP" --header "🌍 Select Country:")
+local country=$(gum choose "US" "IN" "DE" "CA" "GB" "FR" "AU" "JP" --header "🌍 Select Country:")
 
 if [ -z "$country" ]; then
-  smart_gum style --foreground 196 "❌ No country selected"
+  gum style --foreground 196 "❌ No country selected"
   return 1
 fi
 
 # Interactive plan selection
-local plan=$(smart_gum choose "basic" "professional" "unlimited" "plus" "starter" --header "💼 Select Plan (optional):")
+local plan=$(gum choose "basic" "professional" "unlimited" "plus" "starter" --header "💼 Select Plan (optional):")
 
 # Interactive API client handles selection (multi-select)
-local handles=$(smart_gum choose "facebook" "online_store" "pos" "mobile_app" "custom" --multiple --header "🔗 Select API Client Handles (use space to select multiple):")
+local handles=$(gum choose "facebook" "online_store" "pos" "mobile_app" "custom" --multiple --header "🔗 Select API Client Handles (use space to select multiple):")
 
 if [ -z "$handles" ]; then
   handles="facebook,online_store"  # Default handles
@@ -26,7 +26,7 @@ if [ -n "$plan" ]; then
 fi
 
 # Show what will be executed
-smart_gum style \
+gum style \
   --border normal \
   --margin "1" \
   --padding "1" \
@@ -39,4 +39,4 @@ smart_gum style \
   "Command: $cmd"
 
 # Confirm execution
-smart_gum confirm "Execute this command?" && eval "$cmd"
+gum confirm "Execute this command?" && eval "$cmd"

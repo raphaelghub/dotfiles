@@ -153,150 +153,12 @@ if [[ -f /opt/dev/sh/chruby/chruby.sh ]]; then
   fi
 fi
 
-# Helper function to check function availability
-function dotfiles_status() {
-  echo "🔧 Dotfiles Configuration Status"
-  echo "================================="
-  echo ""
 
-  if [[ "$DOTFILES_EXTERNAL_FUNCTIONS" == "true" ]]; then
-    echo "✅ External functions: LOADED from ~/.zsh/functions"
-    echo "✅ Advanced aliases: ENABLED"
-    echo ""
-    echo "📁 Available external functions:"
-    if [[ -d ~/.zsh/functions ]]; then
-      for func in ~/.zsh/functions/*; do
-        if [[ -f "$func" ]]; then
-          echo "   • $(basename "$func")"
-        fi
-      done
-    fi
-  else
-    echo "⚠️  External functions: FALLBACK MODE"
-    echo "⚠️  Advanced aliases: DISABLED"
-    echo ""
-    echo "📝 Fallback functions available:"
-    echo "   • devtree (basic dev tree commands)"
-    echo "   • tree_status (basic git status)"
-    echo "   • create_shop (basic shop creation)"
-    echo "   • change_plan (basic plan change)"
-    echo "   • billing_setup (shows manual commands)"
-    echo "   • check_pr_shipped (basic PR status)"
-    echo ""
-    echo "🔧 To enable full functionality:"
-    echo "   1. Ensure ~/.zsh/functions directory exists"
-    echo "   2. Add your function files to that directory"
-    echo "   3. Restart your shell or run: source ~/.zshrc"
-  fi
 
-  echo ""
-  echo "🛠️  Dependencies:"
-  if [[ "$DOTFILES_MISSING_DEPS" == "true" ]]; then
-    echo "   ❌ Some dependencies missing (run check_dependencies)"
-  else
-    echo "   ✅ Dependencies OK"
-  fi
-}
 
-# ------------------------------
-# Dependency Management (Optimized)
-# ------------------------------
-# Check for required dependencies (cached)
-check_dependencies() {
-  # Use cache to avoid repeated checks
-  local cache_file="/tmp/.dotfiles_deps_$(whoami)"
-  local cache_ttl=3600  # 1 hour
 
-  if [[ -f "$cache_file" ]] && [[ $(($(date +%s) - $(stat -f%m "$cache_file" 2>/dev/null || stat -c%Y "$cache_file" 2>/dev/null || echo 0))) -lt $cache_ttl ]]; then
-    return 0
-  fi
 
-  local missing_deps=()
 
-  # Check for gum
-  if ! command -v gum >/dev/null 2>&1; then
-    missing_deps+=("gum")
-  fi
-
-  # Check for other critical dependencies
-  if ! command -v fzf >/dev/null 2>&1; then
-    missing_deps+=("fzf")
-  fi
-
-  if [ ${#missing_deps[@]} -gt 0 ]; then
-    echo "⚠️  Missing dependencies: ${missing_deps[*]}"
-    echo "📝 Install them with:"
-
-    if command -v brew >/dev/null 2>&1; then
-      echo "   brew install ${missing_deps[*]}"
-    elif command -v apt-get >/dev/null 2>&1; then
-      echo "   sudo apt-get install ${missing_deps[*]}"
-    else
-      echo "   Please install manually: ${missing_deps[*]}"
-    fi
-
-    echo "🔧 Or run: ./setup.sh to install automatically"
-    return 1
-  fi
-
-  # Cache successful check
-  touch "$cache_file"
-  return 0
-}
-
-# Smart dependency check (only in interactive shells)
-if [[ $- == *i* ]]; then
-  # Check dependencies once per session (not per shell)
-  if [[ -z "$DOTFILES_DEPS_CHECKED" ]]; then
-    if check_dependencies >/dev/null 2>&1; then
-      export DOTFILES_MISSING_DEPS=false
-    else
-      export DOTFILES_MISSING_DEPS=true
-    fi
-    export DOTFILES_DEPS_CHECKED=true
-  fi
-fi
-
-# Smart gum wrapper - graceful degradation
-smart_gum() {
-  if ! command -v gum >/dev/null 2>&1; then
-    if [[ "$DOTFILES_MISSING_DEPS" == "true" ]]; then
-      echo "❌ gum is required for interactive functions"
-      echo "🔧 Run: check_dependencies to see installation instructions"
-      return 1
-    fi
-  fi
-  command gum "$@"
-}
-
-# Utility function to check and install dependencies
-install_deps() {
-  if check_dependencies; then
-    echo "✅ All dependencies are installed!"
-    return 0
-  fi
-
-  echo "📦 Installing missing dependencies..."
-
-  if command -v brew >/dev/null 2>&1; then
-    if ! command -v gum >/dev/null 2>&1; then
-      echo "Installing gum..."
-      brew install gum
-    fi
-    if ! command -v fzf >/dev/null 2>&1; then
-      echo "Installing fzf..."
-      brew install fzf
-    fi
-  else
-    echo "❌ Automatic installation requires Homebrew"
-    echo "🔧 Run ./setup.sh or install manually"
-    return 1
-  fi
-
-  echo "✅ Dependencies installed successfully!"
-  # Clear cache
-  rm -f "/tmp/.dotfiles_deps_$(whoami)"
-}
 
 # ------------------------------
 # PATH Management (Industry Standard)
@@ -329,6 +191,9 @@ alias copilot="gh copilot explain"
 alias copilot-help="gh copilot suggest"
 alias history='fc -l 1'
 
+# Function reload utilities
+alias rf='source ~/.zshrc'
+
 # ------------------------------
 # Git Aliases
 # ------------------------------
@@ -339,6 +204,8 @@ alias glog="git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%
 # ------------------------------
 alias showcoverage="pnpm test:coverage:open"
 alias newtranslation='pnpm translations:generate-index-files'
+
+
 
 # Worktree aliases (conditional on external functions)
 if [[ "$DOTFILES_EXTERNAL_FUNCTIONS" == "true" ]]; then
@@ -353,6 +220,22 @@ fi
 # ===============================================================================
 # FUNCTIONS
 # ===============================================================================
+
+# ------------------------------
+# Function Reload Utilities (Always Available)
+# ------------------------------
+# Alternative: Reload specific function by name
+function reload() {
+  if [[ -n "$1" && -f "$HOME/.zsh/functions/$1" ]]; then
+    unfunction "$1" 2>/dev/null
+    autoload -Uz "$1"
+    echo "🔄 Reloaded function: $1"
+  else
+    echo "Usage: reload <function_name>"
+    echo "Available functions:"
+    ls ~/.zsh/functions/ 2>/dev/null | grep -v '^_' | head -10
+  fi
+}
 
 # ------------------------------
 # General Utility Functions
@@ -373,21 +256,21 @@ checkout () {
   local branches=$(git branch -a --format='%(refname:short)' | grep -v HEAD | sort -u)
 
   if [ -z "$branches" ]; then
-    smart_gum style --foreground 196 "❌ No branches found"
+    gum style --foreground 196 "❌ No branches found"
     return 1
   fi
 
-  local selected_branch=$(echo "$branches" | smart_gum choose --header "🌿 Select branch to checkout:")
+  local selected_branch=$(echo "$branches" | gum choose --header "🌿 Select branch to checkout:")
 
   if [ -z "$selected_branch" ]; then
-    smart_gum style --foreground 196 "❌ No branch selected"
+    gum style --foreground 196 "❌ No branch selected"
     return 1
   fi
 
   # Remove origin/ prefix if present
   selected_branch=${selected_branch#origin/}
 
-  smart_gum style --foreground 212 "🔄 Checking out: $selected_branch"
+  gum style --foreground 212 "🔄 Checking out: $selected_branch"
   git checkout "$selected_branch"
 }
 
@@ -401,34 +284,7 @@ rebase () {
   git rebase origin/$1
 }
 
-# ------------------------------
-# Development Functions (conditional loading with fallbacks)
-# ------------------------------
-if [[ "$DOTFILES_EXTERNAL_FUNCTIONS" != "true" ]]; then
-  # Fallback implementations when external functions are not available
 
-  devtree() {
-    echo "⚠️  devtree: External function not available"
-    echo "📝 Fallback: Using basic dev tree commands"
-    if command -v dev >/dev/null 2>&1; then
-      dev tree "$@"
-    else
-      echo "❌ 'dev' command not found. Install dev tools or add ~/.zsh/functions"
-    fi
-  }
-
-  tree_status() {
-    echo "⚠️  tree_status: External function not available"
-    echo "📝 Fallback: Showing basic git status"
-    if git rev-parse --git-dir >/dev/null 2>&1; then
-      echo "📁 Current directory: $(pwd)"
-      echo "🌿 Current branch: $(git branch --show-current 2>/dev/null || echo 'unknown')"
-      git status --short
-    else
-      echo "❌ Not in a git repository"
-    fi
-  }
-fi
 
 # ------------------------------
 # Testing Functions
@@ -509,70 +365,13 @@ function coverage() {
   $package_manager test:coverage "$path" --collectCoverageFrom="$coverage_pattern" $extra_args
 }
 
-# ------------------------------
-# PR Management Functions (conditional loading with fallbacks)
-# ------------------------------
-if [[ "$DOTFILES_EXTERNAL_FUNCTIONS" != "true" ]]; then
-  check_pr_shipped() {
-    echo "⚠️  check_pr_shipped: External function not available"
-    echo "📝 Fallback: Use 'gh pr status' or check GitHub manually"
-    if command -v gh >/dev/null 2>&1; then
-      echo "🔍 Showing PR status for current repository:"
-      gh pr status
-    else
-      echo "❌ 'gh' command not found. Install GitHub CLI or add ~/.zsh/functions"
-    fi
-  }
-fi
 
-# ------------------------------
-# Shop Management Functions (conditional loading with fallbacks)
-# ------------------------------
-if [[ "$DOTFILES_EXTERNAL_FUNCTIONS" != "true" ]]; then
-  create_shop() {
-    echo "⚠️  create_shop: External function not available"
-    echo "📝 Fallback: Use bin/rails dev:shop:create manually"
-    echo "💡 Example: bin/rails dev:shop:create SHOP_DOMAIN=myshop.myshopify.com"
-    if [[ $# -gt 0 ]]; then
-      echo "🔄 Attempting basic shop creation with provided arguments..."
-      bin/rails dev:shop:create "$@"
-    fi
-  }
 
-  change_plan() {
-    echo "⚠️  change_plan: External function not available"
-    echo "📝 Fallback: Use bin/rails dev:shop:change_plan manually"
-    if [[ $# -ge 2 ]]; then
-      echo "🔄 Attempting plan change: SHOP_ID=$1 PLAN=$2"
-      bin/rails dev:shop:change_plan SHOP_ID="$1" PLAN="$2"
-    else
-      echo "💡 Usage: change_plan SHOP_ID PLAN"
-      echo "💡 Example: change_plan 12345 plus"
-    fi
-  }
-fi
+
 
 function freeze_shop() { bin/rails dev:shop:change_plan SHOP_ID="$1" PLAN=frozen; }
 
-# ------------------------------
-# Billing Functions (conditional loading with fallbacks)
-# ------------------------------
-if [[ "$DOTFILES_EXTERNAL_FUNCTIONS" != "true" ]]; then
-  billing_setup() {
-    echo "⚠️  billing_setup: External function not available"
-    echo "📝 Fallback: Use bin/rails dev:billing commands manually"
-    if [[ -n "$1" ]]; then
-      echo "🏪 Shop ID: $1"
-      echo "💡 Available commands:"
-      echo "   bin/rails dev:billing:add_invoices SHOP_ID=$1"
-      echo "   bin/rails dev:billing:add_failed_invoice SHOP_ID=$1"
-      echo "   bin/rails dev:billing:add_payment_method SHOP_ID=$1 TYPE=credit_card"
-    else
-      echo "💡 Usage: billing_setup SHOP_ID"
-      echo "💡 Example: billing_setup 12345"
-    fi
-  }
-fi
+
 
 # Legacy functions (for backwards compatibility)
 function invoices() { billing_setup "$1"; }
@@ -607,28 +406,374 @@ function newapp() {
 # ===============================================================================
 
 # ------------------------------
-# Function Loading (Industry Standard)
+# Devtree Function (Directly Embedded - No Caching)
 # ------------------------------
-# Check if functions directory exists and load conditionally
+devtree() {
+  local action=""
+  local zone=""
+  local tree=""
+
+  # Parse arguments for direct usage
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      list|ls)
+        dev tree list
+        return
+        ;;
+      remove|rm)
+        shift  # Remove the 'remove' command from args
+        local force_flag=""
+        local worktree_identifier=""
+
+        # Parse remove arguments
+        while [[ $# -gt 0 ]]; do
+          case $1 in
+            --force)
+              force_flag="--force"
+              shift
+              ;;
+            *)
+              worktree_identifier="$1"
+              shift
+              ;;
+          esac
+        done
+
+        if [ -n "$worktree_identifier" ]; then
+          # Direct removal with specified worktree
+          gum style --foreground 214 "🗑️ Removing worktree: $worktree_identifier"
+          dev tree remove "$worktree_identifier" $force_flag
+        else
+          # Interactive tree removal
+          local trees=$(dev tree list 2>/dev/null | grep -v "Available trees:" | grep -v "^$")
+          if [ -n "$trees" ]; then
+            local tree_to_remove=$(echo "$trees" | gum choose --header "🗑️ Select tree to remove:")
+            if [ -n "$tree_to_remove" ]; then
+              # Extract just the tree name from the formatted output
+              local clean_tree_name=$(echo "$tree_to_remove" | sed 's/^[[:space:]]*\*[[:space:]]*//' | awk '{print $1}')
+
+              # Ask about force flag if not already set
+              local use_force=false
+              if [ -z "$force_flag" ]; then
+                if gum confirm "Force remove (even if dirty)?"; then
+                  force_flag="--force"
+                  use_force=true
+                fi
+              fi
+
+              local confirm_msg="Remove tree '$clean_tree_name'"
+              if [ "$use_force" = true ]; then
+                confirm_msg="$confirm_msg (with --force)"
+              fi
+              confirm_msg="$confirm_msg?"
+
+              if gum confirm "$confirm_msg"; then
+                dev tree remove "$clean_tree_name" $force_flag
+              fi
+            fi
+          else
+            gum style --foreground 196 "❌ No trees found to remove"
+          fi
+        fi
+        return
+        ;;
+      -h|--help)
+        echo "devtree - Enhanced wrapper for 'dev tree' with interactive features"
+        echo ""
+        echo "Manage worktrees. Support of worktrees outside of world is limited."
+        echo ""
+        echo "Usage: devtree [COMMAND] [OPTIONS]"
+        echo ""
+        echo "Commands:"
+        echo "  list, ls                     List all worktrees within repo"
+        echo "  remove, rm <identifier>      Remove a worktree by name or path"
+        echo "    --force                    Force remove even if worktree is dirty"
+        echo "  -h, --help                   Show this help"
+        echo ""
+        echo "Interactive mode (no arguments):"
+        echo "  🌳 Create new worktree       Create and switch to new worktree"
+        echo "  🔄 Switch to existing zone   Switch to zone with default tree (.)"
+        echo "  🌿 Open existing tree        Open specific tree in selected zone"
+        echo "  📋 List available trees      Show all worktrees"
+        echo "  🗑️ Remove a tree            Interactive tree removal"
+        echo ""
+        echo "Examples:"
+        echo "  devtree                         # Interactive mode"
+        echo "  devtree list                   # List all trees"
+        echo "  devtree remove my-tree         # Remove specific tree"
+        echo "  devtree remove my-tree --force # Force remove dirty tree"
+        echo "  devtree admin-web my-feature   # Direct: dev cd admin-web -t my-feature"
+        echo ""
+        echo "Interactive workflows:"
+        echo "  🌿 'Open existing tree' → Select 'pr-review' → Select 'admin-web'"
+        echo "     Result: dev cd admin-web -t pr-review"
+        echo ""
+        echo "Note: Support of worktrees outside of world is limited."
+        return
+        ;;
+      *)
+        # If two arguments provided, assume it's zone and tree
+        if [ -z "$zone" ]; then
+          zone="$1"
+        elif [ -z "$tree" ]; then
+          tree="$1"
+        fi
+        shift
+        ;;
+    esac
+  done
+
+  # If zone and tree provided directly
+  if [ -n "$zone" ] && [ -n "$tree" ]; then
+    dev cd "$zone" -t "$tree"
+    return
+  fi
+
+  # Interactive mode
+  local operation=$(gum choose \
+    "🌳 Create new worktree" \
+    "🔄 Switch to existing zone (default tree)" \
+    "🌿 Open existing tree in zone" \
+    "📋 List available trees" \
+    "🗑️ Remove a tree" \
+    --header "🏗️ Worktree Operations:")
+
+  if [ -z "$operation" ]; then
+    gum style --foreground 196 "❌ No operation selected"
+    return 1
+  fi
+
+  case "$operation" in
+    "🌳 Create new worktree")
+      # Get available zones from areas directory
+      local zones_dir="$HOME/world/trees/root/src/areas"
+      local zones=()
+
+      if [ -d "$zones_dir" ]; then
+        while IFS= read -r zone_path; do
+          # Extract just the zone name (part after the last slash)
+          local zone_name="${zone_path##*/}"
+          zones+=("$zone_name")
+        done < <(find "$zones_dir" -type d -mindepth 1 -maxdepth 2 | sed 's|.*/src/areas/||' | grep -v '^\.' | sort)
+      fi
+
+      # Fallback zones if directory not found (use just zone names)
+      if [ ${#zones[@]} -eq 0 ]; then
+        zones=("admin-web" "shopify" "billing" "organizations")
+      fi
+
+      local selected_zone=$(printf '%s\n' "${zones[@]}" | gum choose --header "🎯 Select zone:")
+
+      if [ -z "$selected_zone" ]; then
+        gum style --foreground 196 "❌ No zone selected"
+        return 1
+      fi
+
+      # Get tree name
+      local tree_name=$(gum input --placeholder "Enter tree name (e.g., feature-branch, bug-fix)" --header "🌿 Tree name:")
+
+      if [ -z "$tree_name" ]; then
+        gum style --foreground 196 "❌ Tree name is required"
+        return 1
+      fi
+
+      # Show what will be executed
+      gum style \
+        --border normal \
+        --margin "1" \
+        --padding "1" \
+        --border-foreground 212 \
+        "🌳 Creating new worktree:" \
+        "Zone: $selected_zone" \
+        "Tree: $tree_name" \
+        "" \
+        "Command: dev cd $selected_zone -t $tree_name"
+
+      # Confirm and execute
+      if gum confirm "Create worktree?"; then
+        dev cd "$selected_zone" -t "$tree_name"
+      else
+        gum style --foreground 196 "❌ Operation cancelled"
+      fi
+      ;;
+
+    "🔄 Switch to existing zone (default tree)")
+      # Get available zones
+      local zones_dir="$HOME/world/trees/root/src/areas"
+      local zones=()
+
+      if [ -d "$zones_dir" ]; then
+        while IFS= read -r zone_path; do
+          # Extract just the zone name (part after the last slash)
+          local zone_name="${zone_path##*/}"
+          zones+=("$zone_name")
+        done < <(find "$zones_dir" -type d -mindepth 1 -maxdepth 2 | sed 's|.*/src/areas/||' | grep -v '^\.' | sort)
+      fi
+
+      if [ ${#zones[@]} -eq 0 ]; then
+        zones=("admin-web" "shopify" "billing" "organizations")
+      fi
+
+      local selected_zone=$(printf '%s\n' "${zones[@]}" | gum choose --header "🎯 Select zone to switch to:")
+
+      if [ -z "$selected_zone" ]; then
+        gum style --foreground 196 "❌ No zone selected"
+        return 1
+      fi
+
+      gum style \
+        --border normal \
+        --margin "1" \
+        --padding "1" \
+        --border-foreground 212 \
+        "🔄 Switching to zone:" \
+        "Zone: $selected_zone" \
+        "" \
+        "Command: dev cd $selected_zone -t ."
+
+      dev cd "$selected_zone" -t .
+      ;;
+
+    "🌿 Open existing tree in zone")
+      # First, get available trees
+      local trees=$(dev tree list 2>/dev/null | grep -v "Available trees:" | grep -v "^$")
+
+      if [ -z "$trees" ]; then
+        gum style --foreground 196 "❌ No trees found"
+        return 1
+      fi
+
+      local selected_tree=$(echo "$trees" | gum choose --header "🌿 Select tree to open:")
+
+      if [ -z "$selected_tree" ]; then
+        gum style --foreground 196 "❌ No tree selected"
+        return 1
+      fi
+
+      # Extract just the tree name from the formatted output
+      local clean_tree_name=$(echo "$selected_tree" | sed 's/^[[:space:]]*\*[[:space:]]*//' | awk '{print $1}')
+
+      # Now get available zones
+      local zones_dir="$HOME/world/trees/root/src/areas"
+      local zones=()
+
+      if [ -d "$zones_dir" ]; then
+        while IFS= read -r zone_path; do
+          # Extract just the zone name (part after the last slash)
+          local zone_name="${zone_path##*/}"
+          zones+=("$zone_name")
+        done < <(find "$zones_dir" -type d -mindepth 1 -maxdepth 2 | sed 's|.*/src/areas/||' | grep -v '^\.' | sort)
+      fi
+
+      if [ ${#zones[@]} -eq 0 ]; then
+        zones=("admin-web" "shopify" "billing" "organizations")
+      fi
+
+      local selected_zone=$(printf '%s\n' "${zones[@]}" | gum choose --header "🎯 Select zone to open tree '$clean_tree_name' in:")
+
+      if [ -z "$selected_zone" ]; then
+        gum style --foreground 196 "❌ No zone selected"
+        return 1
+      fi
+
+      gum style \
+        --border normal \
+        --margin "1" \
+        --padding "1" \
+        --border-foreground 212 \
+        "🌿 Opening existing tree in zone:" \
+        "Tree: $clean_tree_name" \
+        "Zone: $selected_zone" \
+        "" \
+        "Command: dev cd $selected_zone -t $clean_tree_name"
+
+      dev cd "$selected_zone" -t "$clean_tree_name"
+      ;;
+
+    "📋 List available trees")
+      gum style \
+        --border normal \
+        --margin "1" \
+        --padding "1" \
+        --border-foreground 212 \
+        "📋 Available trees:"
+
+      dev tree list
+      ;;
+
+    "🗑️ Remove a tree")
+      local trees=$(dev tree list 2>/dev/null | grep -v "Available trees:" | grep -v "^$")
+
+      if [ -z "$trees" ]; then
+        gum style --foreground 196 "❌ No trees found to remove"
+        return 1
+      fi
+
+      local tree_to_remove=$(echo "$trees" | gum choose --header "🗑️ Select tree to remove:")
+
+      if [ -z "$tree_to_remove" ]; then
+        gum style --foreground 196 "❌ No tree selected"
+        return 1
+      fi
+
+      # Extract just the tree name from the formatted output
+      # Remove leading/trailing whitespace and extract the tree name
+      local clean_tree_name=$(echo "$tree_to_remove" | sed 's/^[[:space:]]*\*[[:space:]]*//' | awk '{print $1}')
+
+      # Ask about force flag
+      local force_flag=""
+      local use_force=false
+      if gum confirm "Force remove (even if dirty)?"; then
+        force_flag="--force"
+        use_force=true
+      fi
+
+      local command_text="dev tree remove $clean_tree_name"
+      local confirm_msg="Remove tree '$clean_tree_name'"
+      if [ "$use_force" = true ]; then
+        command_text="$command_text --force"
+        confirm_msg="$confirm_msg (with --force)"
+      fi
+      confirm_msg="$confirm_msg?"
+
+      gum style \
+        --border normal \
+        --margin "1" \
+        --padding "1" \
+        --border-foreground 196 \
+        "⚠️ About to remove tree:" \
+        "Tree: $clean_tree_name" \
+        "" \
+        "Command: $command_text"
+
+      if gum confirm "$confirm_msg"; then
+        dev tree remove "$clean_tree_name" $force_flag
+      else
+        gum style --foreground 196 "❌ Operation cancelled"
+      fi
+      ;;
+  esac
+}
+
+# ------------------------------
+# Function Loading (ZERO CACHING - Always Current)
+# ------------------------------
+# Simple approach: source file every time it's called - absolutely no caching
 if [[ -d ~/.zsh/functions ]]; then
-  # Add function path for autoload support
-  fpath=(~/.zsh/functions $fpath)
-
-  # Autoload individual function files (lazy loading)
-  autoload -Uz ~/.zsh/functions/[^_]*(@) 2>/dev/null
-
-  # Set flag for conditional alias loading
+  for func_file in ~/.zsh/functions/[^_]*; do
+    if [[ -f "$func_file" ]]; then
+      local func_name=$(basename "$func_file")
+      # Skip devtree - it's defined directly in .zshrc
+      if [[ "$func_name" == "devtree" ]]; then
+        continue
+      fi
+      # Create simple wrapper that sources file every single call
+      eval "${func_name}() { source ~/.zsh/functions/$func_name; }"
+    fi
+  done
   export DOTFILES_EXTERNAL_FUNCTIONS=true
 else
   export DOTFILES_EXTERNAL_FUNCTIONS=false
-
-  # Show one-time warning (cached per session)
-  if [[ -z "$DOTFILES_FUNCTIONS_WARNING_SHOWN" && $- == *i* ]]; then
-    echo "⚠️  External functions directory (~/.zsh/functions) not found"
-    echo "📝 Some advanced functions will use fallback implementations"
-    echo "🔧 To get full functionality, ensure ~/.zsh/functions exists"
-    export DOTFILES_FUNCTIONS_WARNING_SHOWN=true
-  fi
 fi
 
 # ------------------------------

@@ -77,7 +77,7 @@ killport () {
     fi
 
     if [[ -z "$pids" ]]; then
-      smart_gum style --foreground 196 "❌ No processes found"
+      gum style --foreground 196 "❌ No processes found"
       return 1
     fi
 
@@ -97,16 +97,16 @@ killport () {
     local signal_name="SIGKILL"
     [[ "$signal" == "15" ]] && signal_name="SIGTERM"
 
-    if smart_gum confirm "Kill processes with $signal_name?"; then
+    if gum confirm "Kill processes with $signal_name?"; then
       for pid in $pids; do
         if kill -"$signal" "$pid" 2>/dev/null; then
-          smart_gum style --foreground 34 "✅ Killed process $pid with $signal_name"
+          gum style --foreground 34 "✅ Killed process $pid with $signal_name"
         else
-          smart_gum style --foreground 196 "❌ Failed to kill process $pid"
+          gum style --foreground 196 "❌ Failed to kill process $pid"
         fi
       done
     else
-      smart_gum style --foreground 196 "❌ Operation cancelled"
+      gum style --foreground 196 "❌ Operation cancelled"
     fi
     return
   fi
@@ -122,7 +122,7 @@ killport () {
   }' | sort -k4,4n)
 
   if [ -z "$processes" ]; then
-    smart_gum style --foreground 196 "❌ No processes found listening on ports"
+    gum style --foreground 196 "❌ No processes found listening on ports"
     return 1
   fi
 
@@ -179,7 +179,7 @@ killport () {
     header_text="🔍 All network processes (TCP & UDP)"
   fi
 
-  smart_gum style \
+  gum style \
     --border normal \
     --margin "1" \
     --padding "1" \
@@ -189,10 +189,10 @@ killport () {
     "Signal: $([ "$signal" = "9" ] && echo "SIGKILL (force)" || echo "SIGTERM (graceful)")"
 
   # Let user select process(es) to kill
-  local selected_processes=$(echo -e "$formatted_processes" | smart_gum choose --no-limit --header "⚠️  Select processes to kill:")
+  local selected_processes=$(echo -e "$formatted_processes" | gum choose --no-limit --header "⚠️  Select processes to kill:")
 
   if [ -z "$selected_processes" ]; then
-    smart_gum style --foreground 196 "❌ No processes selected"
+    gum style --foreground 196 "❌ No processes selected"
     return 0
   fi
 
@@ -226,7 +226,7 @@ killport () {
   [[ "$signal" == "15" ]] && signal_name="SIGTERM (graceful termination)"
 
   # Show what will be killed with enhanced info
-  smart_gum style \
+  gum style \
     --border normal \
     --margin "1" \
     --padding "1" \
@@ -238,21 +238,21 @@ killport () {
     "Total Memory: ${total_memory}MB (estimated)"
 
   # Confirm before killing
-  if smart_gum confirm "Kill selected processes with $signal_name?"; then
+  if gum confirm "Kill selected processes with $signal_name?"; then
     local success_count=0
     local fail_count=0
     for pid in $pids; do
       if kill -"$signal" "$pid" 2>/dev/null; then
-        smart_gum style --foreground 34 "✅ Killed process $pid"
+        gum style --foreground 34 "✅ Killed process $pid"
         ((success_count++))
       else
-        smart_gum style --foreground 196 "❌ Failed to kill process $pid"
+        gum style --foreground 196 "❌ Failed to kill process $pid"
         ((fail_count++))
       fi
     done
 
     # Summary
-    smart_gum style \
+    gum style \
       --border normal \
       --margin "1" \
       --padding "1" \
@@ -261,7 +261,7 @@ killport () {
       "✅ Successfully killed: $success_count processes" \
       "❌ Failed to kill: $fail_count processes"
   else
-    smart_gum style --foreground 196 "❌ Operation cancelled"
+    gum style --foreground 196 "❌ Operation cancelled"
   fi
 }
 

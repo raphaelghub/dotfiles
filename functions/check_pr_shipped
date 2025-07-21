@@ -9,6 +9,24 @@ while [[ $# -gt 0 ]]; do
             full_flag=""  # Remove full flag for brief mode
             shift
             ;;
+        -h|--help)
+            echo "Usage: check_pr_shipped [GITHUB_USERNAME] [OPTIONS]"
+            echo ""
+            echo "Check shipping status of pull requests for a GitHub user."
+            echo ""
+            echo "Arguments:"
+            echo "  GITHUB_USERNAME    GitHub username to check PRs for (default: @me for your PRs)"
+            echo ""
+            echo "Options:"
+            echo "  --brief           Show brief shipping status (no --full flag)"
+            echo "  -h, --help        Show this help message"
+            echo ""
+            echo "Examples:"
+            echo "  check_pr_shipped                    # Check your own PRs"
+            echo "  check_pr_shipped raphaelghub        # Check raphaelghub's PRs"
+            echo "  check_pr_shipped raphaelghub --brief # Check raphaelghub's PRs (brief mode)"
+            return 0
+            ;;
         *)
             author="$1"
             shift
@@ -25,8 +43,8 @@ else
     author_display="$author's"
 fi
 
-# Show fetching status with smart_gum spin
-smart_gum spin --spinner dot --title "Fetching $author_display pull requests..." -- bash -c "
+# Show fetching status with gum spin
+gum spin --spinner dot --title "Fetching $author_display pull requests..." -- bash -c "
     # Get open PRs
     open_prs=\$(gh pr list --author '$author' --limit 100 --json number,title,state --jq '.[] | \"\(.number)|\(.title)|open\"')
 
@@ -43,7 +61,7 @@ pr_data=$(cat /tmp/pr_list_$$ 2>/dev/null | grep -v '^$')
 rm -f /tmp/pr_list_$$
 
 if [ -z "$pr_data" ]; then
-    smart_gum style --foreground 196 "No pull requests found for $author"
+    gum style --foreground 196 "No pull requests found for $author"
     return 1
 fi
 
@@ -55,11 +73,11 @@ while IFS='|' read -r number title pr_status; do
     if [ -n "$number" ]; then
         # Color code based on status
         if [ "$pr_status" = "open" ]; then
-            formatted_pr=$(smart_gum style --foreground 214 "PR #$number") # Orange for open
-            status_badge=$(smart_gum style --foreground 214 --bold "[OPEN]")
+            formatted_pr=$(gum style --foreground 214 "PR #$number") # Orange for open
+            status_badge=$(gum style --foreground 214 --bold "[OPEN]")
         else
-            formatted_pr=$(smart_gum style --foreground 34 "PR #$number") # Blue for merged
-            status_badge=$(smart_gum style --foreground 34 --bold "[MERGED]")
+            formatted_pr=$(gum style --foreground 34 "PR #$number") # Blue for merged
+            status_badge=$(gum style --foreground 34 --bold "[MERGED]")
         fi
 
         display_line="$formatted_pr $title $status_badge"
@@ -78,7 +96,7 @@ if [ -z "$full_flag" ]; then
     header_text="$header_text (brief mode)"
 fi
 
-smart_gum style \
+gum style \
     --border normal \
     --margin "1" \
     --padding "1" \
@@ -86,10 +104,10 @@ smart_gum style \
     "$header_text"
 
 # Let user select a single PR
-selected_pr=$(echo -e "$pr_display_list" | smart_gum choose --height 15 --header "Use arrow keys to navigate, enter to select:")
+selected_pr=$(echo -e "$pr_display_list" | gum choose --height 15 --header "Use arrow keys to navigate, enter to select:")
 
 if [ -z "$selected_pr" ]; then
-    smart_gum style --foreground 196 "No PR selected"
+    gum style --foreground 196 "No PR selected"
     return 0
 fi
 
@@ -102,7 +120,7 @@ if [ -z "$full_flag" ]; then
     status_header="Checking shipping status (brief mode)..."
 fi
 
-smart_gum style \
+gum style \
     --border double \
     --margin "1" \
     --padding "1" \
@@ -123,16 +141,16 @@ if [ -n "$pr_info" ]; then
     IFS='|' read -r number title <<< "$pr_info"
 
     # Show PR header
-    smart_gum style \
+    gum style \
         --foreground 212 \
         --bold \
         --margin "1 0 0 0" \
         "PR #$number: $title"
 
-    smart_gum style --foreground 240 "────────────────────────────────────────"
+    gum style --foreground 240 "────────────────────────────────────────"
 
     # Check shipping status with optional --full flag
-    shadowenv exec -- /opt/dev/bin/dev conveyor is-it-shipped "$pr_number" $full_flag
+    shadowenv exec -- /opt/dev/bin/dev conveyor is-it-shipped --ui "$pr_number" $full_flag
 
     echo # Add spacing
 fi

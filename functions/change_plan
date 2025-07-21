@@ -9,17 +9,17 @@ local shop_id
 if [ $# -eq 1 ]; then
   shop_id="$1"
 else
-  shop_id=$(smart_gum input --placeholder "Enter Shop ID (e.g., 12345)" --header "🏪 Shop ID:")
+  shop_id=$(gum input --placeholder "Enter Shop ID (e.g., 12345)" --header "🏪 Shop ID:")
 fi
 
 if [ -z "$shop_id" ]; then
-  smart_gum style --foreground 196 "❌ Shop ID is required"
+  gum style --foreground 196 "❌ Shop ID is required"
   return 1
 fi
 
 # Validate shop ID is numeric
 if ! [[ "$shop_id" =~ ^[0-9]+$ ]]; then
-  smart_gum style --foreground 196 "❌ Shop ID must be numeric"
+  gum style --foreground 196 "❌ Shop ID must be numeric"
   return 1
 fi
 
@@ -35,15 +35,15 @@ local plans=(
   "cancelled"
 )
 
-local plan=$(printf '%s\n' "${plans[@]}" | smart_gum choose --header "💼 Select Plan:")
+local plan=$(printf '%s\n' "${plans[@]}" | gum choose --header "💼 Select Plan:")
 
 if [ -z "$plan" ]; then
-  smart_gum style --foreground 196 "❌ No plan selected"
+  gum style --foreground 196 "❌ No plan selected"
   return 1
 fi
 
 # Show what will be executed
-smart_gum style \
+gum style \
   --border normal \
   --margin "1" \
   --padding "1" \
@@ -55,8 +55,8 @@ smart_gum style \
   "Command: bin/rails dev:shop:change_plan SHOP_ID=\"$shop_id\" PLAN=\"$plan\""
 
 # Confirm execution
-if smart_gum confirm "Change plan for shop $shop_id to $plan?"; then
+if gum confirm "Change plan for shop $shop_id to $plan?"; then
   bin/rails dev:shop:change_plan SHOP_ID="$shop_id" PLAN="$plan"
 else
-  smart_gum style --foreground 196 "❌ Operation cancelled"
+  gum style --foreground 196 "❌ Operation cancelled"
 fi

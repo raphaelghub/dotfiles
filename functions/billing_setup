@@ -3,22 +3,22 @@ local shop_id
 if [ $# -eq 1 ]; then
   shop_id="$1"
 else
-  shop_id=$(smart_gum input --placeholder "Enter Shop ID (e.g., 12345)" --header "🏪 Shop ID:")
+  shop_id=$(gum input --placeholder "Enter Shop ID (e.g., 12345)" --header "🏪 Shop ID:")
 fi
 
 if [ -z "$shop_id" ]; then
-  smart_gum style --foreground 196 "❌ Shop ID is required"
+  gum style --foreground 196 "❌ Shop ID is required"
   return 1
 fi
 
 # Validate shop ID is numeric
 if ! [[ "$shop_id" =~ ^[0-9]+$ ]]; then
-  smart_gum style --foreground 196 "❌ Shop ID must be numeric"
+  gum style --foreground 196 "❌ Shop ID must be numeric"
   return 1
 fi
 
 # Interactive operation selection
-local operation=$(smart_gum choose \
+local operation=$(gum choose \
   "Generate all invoices" \
   "Create failed invoice" \
   "Create one-time invoice" \
@@ -31,7 +31,7 @@ local operation=$(smart_gum choose \
   --header "💰 Select billing operation:")
 
 if [ -z "$operation" ]; then
-  smart_gum style --foreground 196 "❌ No operation selected"
+  gum style --foreground 196 "❌ No operation selected"
   return 1
 fi
 
@@ -68,7 +68,7 @@ case "$operation" in
 esac
 
 # Show what will be executed
-smart_gum style \
+gum style \
   --border normal \
   --margin "1" \
   --padding "1" \
@@ -79,8 +79,8 @@ smart_gum style \
   "Command: $cmd"
 
 # Confirm execution
-if smart_gum confirm "Execute billing operation?"; then
+if gum confirm "Execute billing operation?"; then
   eval "$cmd"
 else
-  smart_gum style --foreground 196 "❌ Operation cancelled"
+  gum style --foreground 196 "❌ Operation cancelled"
 fi
