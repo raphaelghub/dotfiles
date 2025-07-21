@@ -2,7 +2,7 @@
 
 # Configuration
 add_newline = true
-command_timeout = 4000
+command_timeout = 8000
 
 # Prompt format - order matters for performance
 format = """
@@ -39,7 +39,7 @@ conflicted = "=${count}"
 ahead = "⇡${count}"
 behind = "⇣${count}"
 untracked = "?${count}"
-stashed = "$${count}"
+stashed = "📦${count}"
 modified = "!${count}"
 renamed = "»${count}"
 staged = "+${count}"
@@ -47,8 +47,8 @@ deleted = "✘${count}"
 
 [git_state]
 format = '[\($state( $progress_current of $progress_total)\)]($style) '
-cherry_pick = '[PICK](red)'  # Consistent text-based symbols
-rebase = '[REBASE](red)'  # Consistent text-based symbols
+cherry_pick = '[PICK](red)'                                             # Consistent text-based symbols
+rebase = '[REBASE](red)'                                                # Consistent text-based symbols
 
 [cmd_duration]
 format = "[$duration]($style)"
