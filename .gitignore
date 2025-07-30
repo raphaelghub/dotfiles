@@ -3,3 +3,6 @@
 .DS_Store
 .AppleDouble
 .LSOverride
+# Local machine-specific overrides (never commit)
+.zshrc.local
+**/backup-*/

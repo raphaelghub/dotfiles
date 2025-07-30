@@ -3,7 +3,7 @@
 # ===============================================================================
 # DOTFILES SETUP SCRIPT
 # ===============================================================================
-# Cross-platform setup for macOS and Linux
+# Cross-platform setup for macOS and Linux - Direct loading (no lazy loading)
 
 set -e  # Exit on error
 
@@ -151,8 +151,9 @@ echo "🎉 Dotfiles setup complete!"
 echo ""
 echo "📝 Next steps:"
 echo "   1. Restart your terminal or run: exec zsh"
-echo "   2. Your shell functions are available: devtree, check_pr_shipped, etc."
-echo "   3. All configs are symlinked - edit files in ~/Documents/dotfiles/"
+echo "   2. All tools load immediately - no lazy loading issues!"
+echo "   3. Your shell functions are available: devtree, check_pr_shipped, etc."
+echo "   4. All configs are symlinked - edit files in ~/Documents/dotfiles/"
 echo ""
 
 

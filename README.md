@@ -73,6 +73,40 @@ vim ~/Documents/dotfiles/.zshrc
 # All changes are version controlled with git
 ```
 
+## 📁 Modular Structure
+
+```
+dotfiles/
+├── .zshrc                    # Main configuration (loads modules)
+├── zsh/
+│   ├── aliases.zsh          # All aliases
+│   ├── functions.zsh        # General functions
+│   └── shopify.zsh          # Shopify-specific tools
+├── functions/               # External function files
+├── ghostty-config          # Terminal configuration
+└── starship.toml           # Prompt configuration
+```
+
+**Local Overrides:**
+
+- `~/.zshrc.local` - Machine-specific settings (not in git)
+
+## 🔄 Reorganizing Existing Setup
+
+If you have an existing `.zshrc`, reorganize it into the modular structure:
+
+```bash
+cd ~/Documents/dotfiles
+./migrate-zshrc.sh
+```
+
+This will:
+
+- ✅ Back up your current `.zshrc`
+- ✅ Split it into organized modules
+- ✅ Create `.zshrc.local` for personal settings
+- ✅ Update `.gitignore` appropriately
+
 ## 🔧 Platform Support
 
 - ✅ **macOS** (Homebrew)
