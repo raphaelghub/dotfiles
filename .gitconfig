@@ -16,3 +16,5 @@
 	email = raphael.lomotey@shopify.com
 [include]
 	path = /Users/raphaellomotey/.config/dev/gitconfig
+[maintenance]
+	repo = /Users/raphaellomotey/world/trees/root/src

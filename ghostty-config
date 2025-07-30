@@ -53,6 +53,9 @@ window-padding-x = 10
 window-padding-y = 10
 window-padding-balance = true
 
+# Start window maximized for full width usage
+maximize = true
+
 # Large scrollback buffer (in bytes)
 scrollback-limit = 524288000
 

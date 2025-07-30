@@ -211,7 +211,122 @@ devtree() {
       gum confirm "Create worktree?" && dev cd "$selected_zone" -t "$tree_name" || gum style --foreground 196 "❌ Operation cancelled"
       ;;
 
-    # ... (other cases similar pattern, shortened for brevity)
+    "🔄 Switch to existing zone (default tree)")
+      local zones_dir="$HOME/world/trees/root/src/areas"
+      local zones=()
+
+      if [ -d "$zones_dir" ]; then
+        while IFS= read -r zone_path; do
+          zones+=("${zone_path##*/}")
+        done < <(find "$zones_dir" -type d -mindepth 1 -maxdepth 2 | sed 's|.*/src/areas/||' | grep -v '^\.' | sort)
+      fi
+
+      [ ${#zones[@]} -eq 0 ] && zones=("admin-web" "shopify" "billing" "organizations")
+
+      local selected_zone=$(printf '%s\n' "${zones[@]}" | gum choose --header "🎯 Select zone:")
+      [ -z "$selected_zone" ] && { gum style --foreground 196 "❌ No zone selected"; return 1; }
+
+      gum style --border normal --margin "1" --padding "1" --border-foreground 212 \
+        "🔄 Switching to zone:" "Zone: $selected_zone" "Tree: . (default)" "" "Command: dev cd $selected_zone"
+
+      gum confirm "Switch to zone?" && dev cd "$selected_zone" || gum style --foreground 196 "❌ Operation cancelled"
+      ;;
+
+    "🌿 Open existing tree in zone")
+      # First, try to get a list of all available trees from any existing zone
+      local all_trees=""
+      local zones_dir="$HOME/world/trees/root/src/areas"
+
+      # Try to find trees by checking if we're in a world context
+      if command -v dev >/dev/null 2>&1; then
+        # Try from current context first
+        all_trees=$(dev tree list 2>/dev/null | grep -v "Available trees:" | grep -v "^$" | head -20)
+
+        # If no trees found and we have zones directory, try from a known zone
+        if [ -z "$all_trees" ] && [ -d "$zones_dir" ]; then
+          # Try to cd to the first available zone and list trees from there
+          local first_zone=$(find "$zones_dir" -type d -mindepth 1 -maxdepth 1 | head -1 | xargs basename 2>/dev/null)
+          if [ -n "$first_zone" ]; then
+            # Try to get trees from the context of the first zone
+            all_trees=$(cd "$zones_dir/../.." 2>/dev/null && dev cd "$first_zone" >/dev/null 2>&1 && dev tree list 2>/dev/null | grep -v "Available trees:" | grep -v "^$" | head -20)
+          fi
+        fi
+      fi
+
+      # If still no trees, show a helpful message
+      if [ -z "$all_trees" ]; then
+        gum style --foreground 196 "❌ No trees found. Make sure you're in a Shopify world directory or have existing worktrees."
+        gum style --foreground 214 "💡 Try creating a worktree first, or navigate to a world directory."
+        return 1
+      fi
+
+      # Let user select a tree
+      local selected_tree=$(echo "$all_trees" | gum choose --header "🌿 Select tree:")
+      [ -z "$selected_tree" ] && { gum style --foreground 196 "❌ No tree selected"; return 1; }
+
+      local clean_tree_name=$(echo "$selected_tree" | sed 's/^[[:space:]]*\*[[:space:]]*//' | awk '{print $1}')
+
+      # Now let user select a zone
+      local zones=()
+      if [ -d "$zones_dir" ]; then
+        while IFS= read -r zone_path; do
+          zones+=("${zone_path##*/}")
+        done < <(find "$zones_dir" -type d -mindepth 1 -maxdepth 2 | sed 's|.*/src/areas/||' | grep -v '^\.' | sort)
+      fi
+
+      [ ${#zones[@]} -eq 0 ] && zones=("admin-web" "shopify" "billing" "organizations")
+
+      local selected_zone=$(printf '%s\n' "${zones[@]}" | gum choose --header "🎯 Select zone to open tree in:")
+      [ -z "$selected_zone" ] && { gum style --foreground 196 "❌ No zone selected"; return 1; }
+
+      gum style --border normal --margin "1" --padding "1" --border-foreground 212 \
+        "🌿 Opening tree in zone:" "Zone: $selected_zone" "Tree: $clean_tree_name" "" "Command: dev cd $selected_zone -t $clean_tree_name"
+
+      gum confirm "Open tree?" && dev cd "$selected_zone" -t "$clean_tree_name" || gum style --foreground 196 "❌ Operation cancelled"
+      ;;
+
+    "📋 List available trees")
+      gum style --foreground 214 "📋 Available trees:"
+      dev tree list
+      ;;
+
+    "🗑️ Remove a tree")
+      # Get trees using the same robust method
+      local trees=""
+      if command -v dev >/dev/null 2>&1; then
+        trees=$(dev tree list 2>/dev/null | grep -v "Available trees:" | grep -v "^$")
+
+        # If no trees found and we have zones directory, try from a known zone
+        if [ -z "$trees" ] && [ -d "$HOME/world/trees/root/src/areas" ]; then
+          local first_zone=$(find "$HOME/world/trees/root/src/areas" -type d -mindepth 1 -maxdepth 1 | head -1 | xargs basename 2>/dev/null)
+          if [ -n "$first_zone" ]; then
+            trees=$(cd "$HOME/world/trees/root/src/areas/../.." 2>/dev/null && dev cd "$first_zone" >/dev/null 2>&1 && dev tree list 2>/dev/null | grep -v "Available trees:" | grep -v "^$")
+          fi
+        fi
+      fi
+
+      if [ -n "$trees" ]; then
+        local tree_to_remove=$(echo "$trees" | gum choose --header "🗑️ Select tree to remove:")
+        if [ -n "$tree_to_remove" ]; then
+          local clean_tree_name=$(echo "$tree_to_remove" | sed 's/^[[:space:]]*\*[[:space:]]*//' | awk '{print $1}')
+          local force_flag=""
+          if gum confirm "Force remove (even if dirty)?"; then
+            force_flag="--force"
+          fi
+          local confirm_msg="Remove tree '$clean_tree_name'"
+          [ -n "$force_flag" ] && confirm_msg="$confirm_msg (with --force)"
+          if gum confirm "$confirm_msg?"; then
+            gum style --foreground 214 "🗑️ Removing worktree: $clean_tree_name"
+            dev tree remove "$clean_tree_name" $force_flag
+          else
+            gum style --foreground 196 "❌ Operation cancelled"
+          fi
+        fi
+      else
+        gum style --foreground 196 "❌ No trees found to remove. Make sure you're in a Shopify world directory or have existing worktrees."
+        gum style --foreground 214 "💡 Try creating a worktree first, or navigate to a world directory."
+      fi
+      ;;
 
   esac
 }
@@ -278,3 +393,7 @@ time_startup() {
     chruby "$@";
   }
 }
+
+[[ -f /opt/dev/sh/chruby/chruby.sh ]] && { type chruby >/dev/null 2>&1 || chruby () { source /opt/dev/sh/chruby/chruby.sh; chruby "$@"; } }
+
+[ -f /opt/dev/dev.sh ] && source /opt/dev/dev.sh
